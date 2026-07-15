@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun run agent.ts",
     "server": "bun run src/server.ts",
-    "langraph": "bunx @langchain/langgraph-cli dev"
+    "langraph": "bunx @langchain/langgraph-cli dev",
+    "sub-agent": "bun run langchain/projects/personal-subagent-assistant/index.ts"
   },
   "devDependencies": {
     "@langchain/langgraph-cli": "^1.4.3",
