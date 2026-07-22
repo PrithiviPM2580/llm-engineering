@@ -1,0 +1,672 @@
+Exactly. The knowledge base is one of the first things you should create. Think of it this way:
+
+If your AI has nothing to read, it has nothing reliable to answer with.
+
+Many beginners start by coding the agent, but then realize they don't have any documents to search. A better approach is to design the business and its data first.
+
+A good development order
+Step 1: Define the company
+
+Decide what business you're building for.
+
+Example:
+
+Company: ShopEase
+Type: Electronics E-commerce
+
+Now everything else is based on this company.
+
+Step 2: Decide what customer questions the AI should answer
+
+For example:
+
+- Where is my order?
+- Can I return a product?
+- What is the warranty period?
+- How do I cancel an order?
+- What payment methods do you accept?
+- My product arrived damaged.
+
+These questions tell you what knowledge and tools you'll need.
+
+Step 3: Create the knowledge base
+
+Now write the documents that answer those questions.
+
+knowledge/
+
+refund-policy.md
+shipping-policy.md
+payment-policy.md
+warranty-policy.md
+faq.md
+
+For example:
+
+shipping-policy.md
+
+# Shipping Policy
+
+- Standard shipping: 3–5 business days.
+- Express shipping: 1–2 business days.
+- Orders are processed within 24 hours.
+- Tracking information is emailed once the order ships.
+
+You don't need hundreds of pages. Even 5–10 well-written documents are enough for an MVP.
+
+Step 4: Design the database
+
+Ask yourself:
+
+Which information changes over time and belongs in a database?
+
+For ShopEase, that would be:
+
+Customers
+Orders
+Tickets
+
+Static policies belong in your knowledge base; dynamic customer-specific data belongs in MongoDB.
+
+Step 5: Build the retrieval system
+
+Once you have documents:
+
+Markdown files
+      ↓
+Chunk documents
+      ↓
+Create embeddings
+      ↓
+Store in Pinecone
+
+Now your agent can search the knowledge base.
+
+Step 6: Build database tools
+
+Create tools such as:
+
+getOrderStatus()
+getCustomer()
+createTicket()
+
+These read and write MongoDB data.
+
+Step 7: Build the LangChain agent
+
+Now connect everything:
+
+             Customer Question
+                    │
+                    ▼
+             LangChain Agent
+                    │
+       ┌────────────┴────────────┐
+       ▼                         ▼
+ Knowledge Search           Database Tools
+   (Pinecone)                (MongoDB)
+       │                         │
+       └────────────┬────────────┘
+                    ▼
+               Final Answer
+Think of it like building a library
+
+Imagine you're building a library assistant.
+
+You wouldn't hire the librarian before the library exists.
+
+Instead, you'd:
+
+Build the library (knowledge base).
+Organize the books (Pinecone).
+Create the catalog (database/tools).
+Hire the librarian (the AI agent).
+
+The AI agent is the librarian—it becomes useful only after the knowledge and data are in place.
+
+What I recommend for this project
+
+I would work in this order:
+
+Define ShopEase (the fictional company).
+Write 8–10 knowledge documents (.md files).
+Design the MongoDB collections (customers, orders, tickets).
+Seed MongoDB with sample data.
+Ingest the documents into Pinecone.
+Build and test the retrieval system.
+Create LangChain tools.
+Assemble the customer support agent.
+Build the CLI to chat with the agent.
+
+This sequence mirrors how many production AI projects are developed: the business domain and data come first, then the AI is built on top of them.
+
+Yes, exactly. Those are your MongoDB collections, and in your Node.js/TypeScript application you'll typically represent each collection with a Mongoose model (or another ODM if you choose something else).
+
+Think of it like this:
+
+MongoDB Database
+│
+├── customers   ← Customer Model
+├── orders      ← Order Model
+├── tickets     ← Ticket Model
+└── products    ← Product Model
+
+Each model represents one type of data.
+
+Customer Model
+
+Stores customer information.
+
+Customer
+---------
+_id
+name
+email
+phone
+address
+createdAt
+
+Example document:
+
+{
+  "_id": "C001",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1 555-1234",
+  "address": "New York"
+}
+Product Model
+
+Stores products sold by ShopEase.
+
+Product
+--------
+_id
+name
+brand
+category
+price
+stock
+warranty
+description
+
+Example:
+
+{
+  "_id": "P101",
+  "name": "HyperX Alloy Origins",
+  "brand": "HyperX",
+  "category": "Keyboard",
+  "price": 109.99,
+  "stock": 25,
+  "warranty": "24 months"
+}
+Order Model
+
+Stores customer orders.
+
+Order
+------
+_id
+customerId
+products
+status
+trackingNumber
+shippingAddress
+totalPrice
+orderDate
+
+Example:
+
+{
+  "_id": "ORD1001",
+  "customerId": "C001",
+  "products": [
+    {
+      "productId": "P101",
+      "quantity": 1
+    }
+  ],
+  "status": "Shipped",
+  "trackingNumber": "TRK123456",
+  "totalPrice": 109.99
+}
+
+Notice that an order references a customer and one or more products.
+
+Ticket Model
+
+Stores support requests.
+
+Ticket
+-------
+_id
+customerId
+orderId
+subject
+message
+status
+priority
+createdAt
+
+Example:
+
+{
+  "_id": "T100",
+  "customerId": "C001",
+  "orderId": "ORD1001",
+  "subject": "Damaged keyboard",
+  "message": "The keyboard arrived with broken keys.",
+  "status": "Open",
+  "priority": "High"
+}
+How everything is connected
+Customer
+   │
+   │ 1
+   │
+   ├──────────────┐
+   │              │
+   ▼              ▼
+Orders         Tickets
+   │
+   │
+   ▼
+Products
+
+A customer can have many orders.
+
+A customer can create many support tickets.
+
+An order can contain multiple products.
+
+What should you do next?
+
+Since you've finished the knowledge base, I recommend this order:
+
+✅ Step 1 (Done)
+knowledge/
+✅ Step 2
+
+Create the Mongoose models:
+
+models/
+
+Customer.ts
+Product.ts
+Order.ts
+Ticket.ts
+✅ Step 3
+
+Seed the database with sample data:
+
+scripts/
+
+seedCustomers.ts
+seedProducts.ts
+seedOrders.ts
+
+For example:
+
+10 customers
+20 products
+30 orders
+10 tickets
+
+This gives your agent realistic data to query.
+
+✅ Step 4
+
+Build the Pinecone ingestion script.
+
+✅ Step 5
+
+Create LangChain tools such as:
+
+searchKnowledge()
+getCustomer()
+getOrder()
+getProduct()
+createTicket()
+One suggestion
+
+I would add the products collection even if your original assignment only mentioned customers, orders, and tickets. It makes the project more realistic because:
+
+Product specifications and inventory belong in a database.
+Company policies (refunds, shipping, FAQs) belong in the knowledge base.
+
+That separation mirrors how many real customer support systems are designed.
+
+here what should i use the mongodb or the mongoose
+
+I recommend using Mongoose for this project.
+
+Here's why.
+
+Option 1: MongoDB Driver
+
+The official MongoDB driver lets you communicate directly with MongoDB.
+
+Example:
+
+const customer = await db.collection("customers").findOne({
+  email: "john@example.com",
+});
+Pros
+Fast
+Lightweight
+Full control
+Less abstraction
+Cons
+You have to define your own types.
+No built-in schema validation.
+More repetitive code.
+Relationships are more manual.
+Option 2: Mongoose ⭐ (Recommended)
+
+Mongoose sits on top of the MongoDB driver and provides:
+
+Schemas
+Models
+Validation
+Middleware
+TypeScript support
+Easier querying
+
+Example:
+
+const customer = await Customer.findOne({
+  email: "john@example.com",
+});
+
+Much cleaner.
+
+Why Mongoose is a good fit for this project
+
+You're building a project with well-defined entities:
+
+Customer
+Product
+Order
+Ticket
+
+These entities naturally map to Mongoose models.
+
+For example:
+
+Customer
+│
+├── name
+├── email
+├── phone
+└── address
+
+This becomes one schema.
+
+Likewise for:
+
+Product
+Order
+Ticket
+It also works well with LangChain tools
+
+Imagine your agent calls:
+
+getOrder("ORD1001")
+
+Internally:
+
+const order = await Order.findById("ORD1001");
+
+Or:
+
+const customer = await Customer.findOne({
+  email,
+});
+
+Very readable.
+
+Recommended Folder Structure
+src/
+│
+├── models/
+│   ├── Customer.ts
+│   ├── Product.ts
+│   ├── Order.ts
+│   └── Ticket.ts
+│
+├── database/
+│   └── mongodb.ts
+│
+├── tools/
+│
+├── agent/
+│
+└── cli/
+
+Notice that models/ contains your Mongoose models, while database/ contains the code that connects to MongoDB.
+
+What you'll install
+npm install mongoose
+
+And for TypeScript:
+
+npm install -D @types/node
+
+(Mongoose includes its own TypeScript types, so you don't need a separate @types/mongoose package.)
+
+My recommendation
+
+For this project, I would use:
+
+Node.js
+TypeScript
+Mongoose
+MongoDB
+LangChain
+Pinecone
+
+This combination is widely used, easy to understand, and works well for projects with structured data like customers, products, orders, and tickets. Later, if you build a very high-performance service or need features that Mongoose doesn't provide, you can always switch to the native MongoDB driver because Mongoose is built on top of it.
+
+do i have to make the interface type like that when making model like interface extends document like that
+
+Yes, since you are using TypeScript + Mongoose, it is a good practice to create interfaces/types for your models.
+
+However, the old pattern:
+
+interface ICustomer extends Document {
+   name: string;
+}
+
+is still common, but in modern Mongoose + TypeScript projects, there are cleaner ways.
+
+For your project, I recommend this structure:
+
+src/
+│
+├── models/
+│   ├── Customer.ts
+│   ├── Product.ts
+│   ├── Order.ts
+│   └── Ticket.ts
+│
+├── types/
+│   ├── customer.ts
+│   ├── product.ts
+│   ├── order.ts
+│   └── ticket.ts
+Example: Customer Model
+types/customer.ts
+export interface Customer {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+This describes your data shape.
+
+models/Customer.ts
+import mongoose, { Schema } from "mongoose";
+import { Customer } from "../types/customer";
+
+
+const customerSchema = new Schema<Customer>(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
+    phone: {
+      type: String,
+      required: true,
+    },
+
+    address: {
+      type: String,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+
+export const CustomerModel = mongoose.model<Customer>(
+  "Customer",
+  customerSchema
+);
+Why separate interface and model?
+
+Because they have different responsibilities.
+
+Interface
+
+Answers:
+
+What does a customer look like in TypeScript?
+
+Example:
+
+Customer {
+ name
+ email
+ phone
+}
+Schema
+
+Answers:
+
+How should MongoDB store and validate this data?
+
+Example:
+
+email:
+{
+ type:String,
+ required:true
+}
+For your Order model
+
+Your order is more complex because it references other data.
+
+Interface:
+
+export interface Order {
+  customerId: string;
+
+  products: {
+    productId: string;
+    quantity: number;
+  }[];
+
+  totalPrice: number;
+
+  status: "Pending" | "Shipped" | "Delivered" | "Cancelled";
+
+  trackingNumber?: string;
+}
+
+Schema:
+
+const orderSchema = new Schema<Order>({
+  customerId:{
+    type:String,
+    required:true
+  },
+
+  products:[
+    {
+      productId:String,
+      quantity:Number
+    }
+  ],
+
+  totalPrice:{
+    type:Number,
+    required:true
+  },
+
+  status:{
+    type:String,
+    default:"Pending"
+  },
+
+  trackingNumber:String
+});
+Alternative: Use extends Document
+
+You may see code like:
+
+import { Document } from "mongoose";
+
+interface ICustomer extends Document {
+  name:string;
+  email:string;
+}
+
+This works, but many developers avoid it now because:
+
+It mixes database behavior with your data type.
+It makes your interfaces less reusable.
+Mongoose already handles document typing.
+For your ShopEase project, I would use:
+types/
+    Customer.ts
+    Product.ts
+    Order.ts
+    Ticket.ts
+
+
+models/
+    Customer.ts
+    Product.ts
+    Order.ts
+    Ticket.ts
+
+Flow:
+
+TypeScript Interface
+        |
+        v
+Mongoose Schema
+        |
+        v
+MongoDB Collection
+
+This will keep your code clean when you later create LangChain tools like:
+
+getCustomer()
+getOrder()
+createTicket()
+getProduct()
+
+because your database layer will already have proper TypeScript types.
