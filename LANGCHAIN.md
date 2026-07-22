@@ -452,3 +452,22 @@ Build one application that combines everything you've learned.
 10. AI Personal Assistant (Capstone)
 
 This progression takes you from basic prompt chains to production-ready LangChain applications, covering most of the concepts you'll encounter in real-world AI development.
+
+Phase 1: Foundations (Core LangChain & RAG)
+Focus: Prompt templates, basic chains, and retrieval.
+
+Personal Document Q&A: Build a simple RAG (Retrieval Augmented Generation) app that allows you to chat with a single PDF or text file.
+Web-Scraping Research Assistant: Create a tool-enabled chain that scrapes a provided URL and answers questions based on that content.
+SQL Database Query Agent: Build a chain that converts natural language questions into SQL queries to answer questions from a local SQLite database.
+Phase 2: Intermediate (Tool Use & Memory)
+Focus: Adding persistence, complex tool schemas, and chat history.
+
+Multi-Turn Chatbot with Memory: Add session persistence to your Q&A app so the agent remembers previous questions and context within a thread.
+Custom Tool Suite: Develop a bot that integrates with 2–3 different APIs (e.g., a weather API, a calculator, and a search tool) where the agent decides which tool to call based on user input.
+Feedback & Evaluation: Use LangSmith to trace and evaluate the responses of your previous projects to improve prompt performance.
+Phase 3: Advanced (LangGraph & Multi-Agent)
+Focus: Stateful orchestration, subgraphs, and complex agent design.
+
+Stateful Multi-Agent Workflow: Build an app using LangGraph where an "orchestrator" agent breaks a complex request into smaller tasks and distributes them to specialized sub-agents (e.g., a researcher, a writer, and a reviewer).
+Human-in-the-Loop Interaction: Implement a workflow that pauses agent execution to wait for human approval or input before proceeding to the next step.
+Progressive Tool Loading: Design an agent that loads specialized tool schemas on-demand based on context, optimizing token usage and model performance

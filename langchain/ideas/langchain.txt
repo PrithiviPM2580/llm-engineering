@@ -1,0 +1,16 @@
+Customer Support Automation
+Build an agent that queries your internal documentation or database to answer customer tickets.
+
+Why LangChain: Use create_agent to bind your proprietary knowledge retrieval tools to an LLM. LangChain makes it easy to swap out different models (OpenAI, Anthropic, Google) to find the best balance of speed and cost for your support traffic.
+Personal Research Assistant
+Create an agent that crawls websites, summarizes articles, and saves key insights to a structured file or database.
+
+Why LangChain: You can define custom tools for web searching, PDF parsing, or data storage. LangChain acts as the glue, managing the loop between the agent deciding which tool to call and the execution of that tool, while allowing you to inject custom system prompts to control the tone and depth of the summaries.
+Automated Report Generator
+Design an agent that takes a user query, fetches data from multiple APIs, processes the data, and drafts a formatted report.
+
+Why LangChain: Because this workflow requires multiple steps and tool calls, LangChain’s harness provides a clean structure to manage state and prompt engineering at each stage of the report generation process. You can easily middleware the agent to enforce formatting rules or safety checks.
+Task Scheduler/Workflow Bot
+Implement an agent that can interpret natural language requests to schedule meetings, update calendar entries, or organize tasks in a project management tool.
+
+Why LangChain: By binding tools like Google Calendar or Jira APIs, you enable the agent to act on the world. LangChain allows you to maintain the context of the conversation, ensuring the agent understands user intent over multiple turns while safely invoking the necessary APIs.
