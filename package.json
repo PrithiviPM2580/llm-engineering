@@ -8,7 +8,8 @@
     "server": "bun run src/server.ts",
     "langraph": "bunx @langchain/langgraph-cli dev",
     "sub-agent": "bun run langchain/projects/personal-subagent-assistant/index.ts",
-    "semantic-search-engine": "bun run langchain/projects/semantic-search-engine/index.ts"
+    "semantic-search-engine": "bun run langchain/projects/semantic-search-engine/index.ts",
+    "mongodb-agent": "bun run langchain/projects/mongodb-agent/index.ts"
   },
   "devDependencies": {
     "@langchain/langgraph-cli": "^1.4.3",
@@ -30,6 +31,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "dotenv": "^17.4.2",
     "langchain": "^1.5.3",
+    "mongodb": "^7.5.0",
     "mongoose": "^9.8.0",
     "pdf-parse": "^2.4.5",
     "zod": "^4.4.3"
