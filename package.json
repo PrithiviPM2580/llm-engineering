@@ -9,11 +9,13 @@
     "langraph": "bunx @langchain/langgraph-cli dev",
     "sub-agent": "bun run langchain/projects/personal-subagent-assistant/index.ts",
     "semantic-search-engine": "bun run langchain/projects/semantic-search-engine/index.ts",
-    "mongodb-agent": "bun run langchain/projects/mongodb-agent/index.ts"
+    "mongodb-agent": "tsx langchain/projects/mongodb-agent/index.ts",
+    "seed": "tsx langchain/projects/mongodb-agent/seed.ts"
   },
   "devDependencies": {
     "@langchain/langgraph-cli": "^1.4.3",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "tsx": "^4.23.1"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -29,6 +31,7 @@
     "@langchain/openrouter": "^0.4.5",
     "@langchain/textsplitters": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "bson": "6.7.0",
     "dotenv": "^17.4.2",
     "langchain": "^1.5.3",
     "mongodb": "^7.5.0",
