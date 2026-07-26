@@ -10,7 +10,8 @@
     "sub-agent": "bun run langchain/projects/personal-subagent-assistant/index.ts",
     "semantic-search-engine": "bun run langchain/projects/semantic-search-engine/index.ts",
     "mongodb-agent": "tsx langchain/projects/mongodb-agent/index.ts",
-    "seed": "tsx langchain/projects/mongodb-agent/seed.ts"
+    "seed": "tsx langchain/projects/mongodb-agent/seed.ts",
+    "subagent-personal-assistant": "tsx langchain/examples/subagent-personal-assistant.ts"
   },
   "devDependencies": {
     "@langchain/langgraph-cli": "^1.4.3",
