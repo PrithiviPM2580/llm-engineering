@@ -15,6 +15,7 @@
     "calculator-agent": "tsx langraph/examples/calculator.ts",
     "prompt-chaining-function": "tsx langraph/examples/prompt-chaining-function.ts",
     "parellel-agent": "tsx langraph/examples/parellel-agent.ts",
+    "parellel-functional-agent": "tsx langraph/examples/parellel-functional-agent.ts",
     "index-agent": "tsx langraph/index.ts"
   },
   "devDependencies": {
