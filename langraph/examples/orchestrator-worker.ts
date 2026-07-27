@@ -9,6 +9,7 @@ import {
   type ConditionalEdgeRouter,
   type GraphNode,
 } from "@langchain/langgraph";
+import { ChatOpenRouter } from "@langchain/openrouter";
 
 const sectionSchema = z.object({
   name: z.string(),
@@ -17,9 +18,14 @@ const sectionSchema = z.object({
 
 type SectionSchema = z.infer<typeof sectionSchema>;
 
-const llm = new ChatGoogle({
-  apiKey: process.env.GOOGLE_API_KEY!,
-  model: "gemini-2.5-flash",
+// const llm = new ChatGoogle({
+//   apiKey: process.env.GOOGLE_API_KEY!,
+//   model: "gemini-2.5-flash",
+// });
+
+const llm = new ChatOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY!,
+  model: "nvidia/nemotron-3-ultra-550b-a55b:free",
 });
 
 const planner = llm.withStructuredOutput(
