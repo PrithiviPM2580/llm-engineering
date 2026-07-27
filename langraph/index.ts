@@ -1,151 +1,370 @@
-// Step 1: Define tools and model
-
-import { ChatOpenRouter } from "@langchain/openrouter";
-import { tool } from "@langchain/core/tools";
-import * as z from "zod";
+import "dotenv/config";
+import { ChatGoogle } from "@langchain/google";
 import { HumanMessage } from "@langchain/core/messages";
 import {
   StateGraph,
   StateSchema,
-  MessagesValue,
-  ReducedValue,
-  type GraphNode,
-  type ConditionalEdgeRouter,
+  Command,
+  MemorySaver,
+  interrupt,
   START,
   END,
+  type GraphNode,
 } from "@langchain/langgraph";
-import {
-  SystemMessage,
-  AIMessage,
-  ToolMessage,
-} from "@langchain/core/messages";
+import * as z from "zod";
 
-const model = new ChatOpenRouter({
-  model: "claude-sonnet-4-6",
+// =======================
+// LLM
+// =======================
+
+const llm = new ChatGoogle({
+  apiKey: process.env.GOOGLE_API_KEY!,
+  model: "gemini-2.5-flash",
   temperature: 0,
 });
 
-// Define tools
-const add = tool(({ a, b }) => a + b, {
-  name: "add",
-  description: "Add two numbers",
-  schema: z.object({
-    a: z.number().describe("First number"),
-    b: z.number().describe("Second number"),
-  }),
+// =======================
+// Schemas
+// =======================
+
+const EmailClassificationSchema = z.object({
+  intent: z.enum(["question", "bug", "billing", "feature", "complex"]),
+
+  urgency: z.enum(["low", "medium", "high", "critical"]),
+
+  topic: z.string(),
+  summary: z.string(),
 });
 
-const multiply = tool(({ a, b }) => a * b, {
-  name: "multiply",
-  description: "Multiply two numbers",
-  schema: z.object({
-    a: z.number().describe("First number"),
-    b: z.number().describe("Second number"),
-  }),
+const EmailAgentState = new StateSchema({
+  // incoming email
+  emailContent: z.string(),
+  senderEmail: z.string(),
+  emailId: z.string(),
+
+  // optional customer info
+  customerId: z.string().optional(),
+
+  // AI generated data
+  classification: EmailClassificationSchema.optional(),
+
+  searchResults: z.array(z.string()).optional(),
+
+  customerHistory: z.record(z.string(), z.any()).optional(),
+
+  responseText: z.string().optional(),
 });
 
-const divide = tool(({ a, b }) => a / b, {
-  name: "divide",
-  description: "Divide two numbers",
-  schema: z.object({
-    a: z.number().describe("First number"),
-    b: z.number().describe("Second number"),
-  }),
-});
+type EmailState = typeof EmailAgentState.State;
 
-// Augment the LLM with tools
-const toolsByName: Record<
-  string,
-  typeof add | typeof multiply | typeof divide
-> = {
-  [add.name]: add,
-  [multiply.name]: multiply,
-  [divide.name]: divide,
-};
-const tools = Object.values(toolsByName);
-const modelWithTools = model.bindTools(tools);
+// =======================
+// Fake external services
+// Replace these with APIs
+// =======================
 
-// Step 2: Define state
-
-const MessagesState = new StateSchema({
-  messages: MessagesValue,
-  llmCalls: new ReducedValue(z.number().default(0), {
-    reducer: (x, y) => x + y,
-  }),
-});
-
-// Step 3: Define model node
-
-const llmCall: GraphNode<typeof MessagesState> = async (state) => {
+async function fetchCustomerHistory(customerId: string) {
   return {
-    messages: [
-      await modelWithTools.invoke([
-        new SystemMessage(
-          "You are a helpful assistant tasked with performing arithmetic on a set of inputs.",
-        ),
-        ...state.messages,
-      ]),
-    ],
-    llmCalls: 1,
+    id: customerId,
+    tier: "premium",
+    previousTickets: 3,
   };
+}
+
+async function sendEmail(email: string) {
+  console.log("EMAIL SENT:", email.substring(0, 100));
+}
+
+// =======================
+// Nodes
+// =======================
+
+// 1. Read email
+
+const readEmail: GraphNode<typeof EmailAgentState> = async (state) => {
+  console.log("Reading email:", state.emailContent);
+
+  return {};
 };
 
-// Step 4: Define tool node
+// 2. Classify email
 
-const toolNode: GraphNode<typeof MessagesState> = async (state) => {
-  const lastMessage = state.messages.at(-1);
+const classifyIntent: GraphNode<typeof EmailAgentState> = async (state) => {
+  const structured = llm.withStructuredOutput(EmailClassificationSchema);
 
-  if (lastMessage == null || !AIMessage.isInstance(lastMessage)) {
-    return { messages: [] };
+  const classification = await structured.invoke(`
+
+Analyze this customer email.
+
+Email:
+${state.emailContent}
+
+Sender:
+${state.senderEmail}
+
+Return:
+intent,
+urgency,
+topic,
+summary
+
+`);
+
+  let next: string;
+
+  if (
+    classification.intent === "billing" ||
+    classification.urgency === "critical"
+  ) {
+    next = "lookupCustomerHistory";
+  } else if (classification.intent === "bug") {
+    next = "createBugTicket";
+  } else if (
+    classification.intent === "question" ||
+    classification.intent === "feature"
+  ) {
+    next = "searchDocumentation";
+  } else {
+    next = "draftResponse";
   }
 
-  const result: ToolMessage[] = [];
-  for (const toolCall of lastMessage.tool_calls ?? []) {
-    const tool = toolsByName[toolCall.name];
-    if (!tool) {
-      throw new Error(`Tool ${toolCall.name} not found`);
-    }
-    const observation = await tool.invoke(toolCall);
-    result.push(observation);
-  }
+  return new Command({
+    update: {
+      classification,
+    },
 
-  return { messages: result };
+    goto: next,
+  });
 };
 
-// Step 5: Define logic to determine whether to end
+// 3. Customer lookup
 
-const shouldContinue: ConditionalEdgeRouter<
-  typeof MessagesState,
-  Record<string, any>,
-  "toolNode"
-> = (state) => {
-  const lastMessage = state.messages.at(-1);
+const lookupCustomerHistory: GraphNode<typeof EmailAgentState> = async (
+  state,
+) => {
+  if (!state.customerId) {
+    const customerId = interrupt({
+      message: "Customer ID required",
+    });
 
-  if (!lastMessage || !AIMessage.isInstance(lastMessage)) {
-    return END;
+    return new Command({
+      update: {
+        customerId,
+      },
+
+      goto: "lookupCustomerHistory",
+    });
   }
 
-  if (lastMessage.tool_calls?.length) {
-    return "toolNode";
-  }
+  const history = await fetchCustomerHistory(state.customerId);
 
-  return END;
+  return new Command({
+    update: {
+      customerHistory: history,
+    },
+
+    goto: "draftResponse",
+  });
 };
 
-// Step 6: Build and compile the agent
-const agent = new StateGraph(MessagesState)
-  .addNode("llmCall", llmCall)
-  .addNode("toolNode", toolNode)
-  .addEdge(START, "llmCall")
-  .addConditionalEdges("llmCall", shouldContinue, ["toolNode", END])
-  .addEdge("toolNode", "llmCall")
-  .compile();
+// 4. Search docs
 
-// Invoke
-const result = await agent.invoke({
-  messages: [new HumanMessage("Add 3 and 4.")],
+const searchDocumentation: GraphNode<typeof EmailAgentState> = async (
+  state,
+) => {
+  const classification = state.classification!;
+
+  const results = [
+    "Password reset is available from Settings",
+
+    "Password requires 12 characters",
+
+    "Users can update billing information from account settings",
+  ];
+
+  return new Command({
+    update: {
+      searchResults: results,
+    },
+
+    goto: "draftResponse",
+  });
+};
+
+// 5. Bug ticket
+
+const createBugTicket: GraphNode<typeof EmailAgentState> = async () => {
+  const ticketId = "BUG-" + Date.now();
+
+  return new Command({
+    update: {
+      searchResults: [`Created ticket ${ticketId}`],
+    },
+
+    goto: "draftResponse",
+  });
+};
+
+// 6. Draft response
+
+const draftResponse: GraphNode<typeof EmailAgentState> = async (state) => {
+  const classification = state.classification!;
+
+  let context = "";
+
+  if (state.searchResults) {
+    context += state.searchResults.join("\n");
+  }
+
+  if (state.customerHistory) {
+    context += `
+Customer tier:
+${state.customerHistory.tier}
+`;
+  }
+
+  const result = await llm.invoke([
+    new HumanMessage(`
+
+Write a professional customer support reply.
+
+Customer email:
+
+${state.emailContent}
+
+
+Intent:
+${classification.intent}
+
+
+Urgency:
+${classification.urgency}
+
+
+Context:
+
+${context}
+
+
+Rules:
+
+- Be polite
+- Solve the issue
+- Keep it concise
+
+`),
+  ]);
+
+  const needsHuman =
+    classification.urgency === "high" ||
+    classification.urgency === "critical" ||
+    classification.intent === "complex";
+
+  return new Command({
+    update: {
+      responseText: result.content.toString(),
+    },
+
+    goto: needsHuman ? "humanReview" : "sendReply",
+  });
+};
+
+// 7. Human approval
+
+const humanReview: GraphNode<typeof EmailAgentState> = async (state) => {
+  const decision = interrupt({
+    email: state.emailContent,
+
+    draft: state.responseText,
+
+    action: "Approve or edit reply",
+  });
+
+  if (decision.approved) {
+    return new Command({
+      update: {
+        responseText: decision.editedResponse ?? state.responseText,
+      },
+
+      goto: "sendReply",
+    });
+  }
+
+  return new Command({
+    goto: END,
+  });
+};
+
+// 8. Send email
+
+const sendReply: GraphNode<typeof EmailAgentState> = async (state) => {
+  await sendEmail(state.responseText!);
+
+  return {};
+};
+
+// =======================
+// Build graph
+// =======================
+
+const workflow = new StateGraph(EmailAgentState)
+
+  .addNode("readEmail", readEmail)
+
+  .addNode("classifyIntent", classifyIntent)
+
+  .addNode("lookupCustomerHistory", lookupCustomerHistory)
+
+  .addNode("searchDocumentation", searchDocumentation, {
+    retryPolicy: {
+      maxAttempts: 3,
+    },
+  })
+
+  .addNode("createBugTicket", createBugTicket)
+
+  .addNode("draftResponse", draftResponse)
+
+  .addNode("humanReview", humanReview)
+
+  .addNode("sendReply", sendReply)
+
+  .addEdge(START, "readEmail")
+
+  .addEdge("readEmail", "classifyIntent")
+
+  .addEdge("sendReply", END);
+
+// =======================
+// Compile
+// =======================
+
+const memory = new MemorySaver();
+
+const app = workflow.compile({
+  checkpointer: memory,
 });
 
-for (const message of result.messages) {
-  console.log(`[${message.type}]: ${message.text}`);
-}
+// =======================
+// Test
+// =======================
+
+const initialState: EmailState = {
+  emailContent: "I was charged twice for my subscription. This is urgent!",
+  senderEmail: "customer@example.com",
+  emailId: "email_123",
+  customerId: undefined,
+  classification: undefined,
+  searchResults: undefined,
+  customerHistory: undefined,
+  responseText: undefined,
+};
+
+const config = {
+  configurable: {
+    thread_id: "customer_123",
+  },
+};
+
+const result = await app.invoke(initialState, config);
+
+console.log("Current state:", result);
