@@ -16,6 +16,8 @@
     "prompt-chaining-function": "tsx langraph/examples/prompt-chaining-function.ts",
     "parellel-agent": "tsx langraph/examples/parellel-agent.ts",
     "parellel-functional-agent": "tsx langraph/examples/parellel-functional-agent.ts",
+    "router-graph-agent": "tsx langraph/examples/router-graph-agent.ts",
+    "orchestration-agent": "tsx langraph/examples/orchestrator-worker.ts",
     "index-agent": "tsx langraph/index.ts"
   },
   "devDependencies": {
