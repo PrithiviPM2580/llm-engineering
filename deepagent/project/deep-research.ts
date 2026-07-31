@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { createDeepAgent, type SubAgent } from "deepagents";
 import { tool, todoListMiddleware } from "langchain";
 import { z } from "zod";
@@ -55,6 +56,7 @@ async function fetchWebPageContent(
 const tavilySearch = tool(
   async ({ query, maxResults = 1, topic = "general" }: TavilySearchInput) => {
     const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.TAVILY_API_KEY}`,
@@ -119,6 +121,8 @@ const agent = createDeepAgent({
 });
 
 async function main() {
+  console.log("Starting...");
+
   const stream = await agent.streamEvents(
     {
       messages: [
@@ -130,14 +134,32 @@ async function main() {
     },
     { version: "v3" },
   );
-  for await (const message of stream.messages) {
-    for await (const token of message.text) {
-      process.stdout.write(token);
-    }
-  }
+
+  // Consume coordinator and subagent streams concurrently
+  await Promise.all([
+    (async () => {
+      for await (const message of stream.messages) {
+        process.stdout.write(`[${message.node}] `);
+        for await (const delta of message.text) {
+          process.stdout.write(delta);
+        }
+      }
+    })(),
+    (async () => {
+      for await (const subagent of stream.subagents) {
+        void (async () => {
+          for await (const message of subagent.messages) {
+            process.stdout.write(`[${subagent.name}] `);
+            for await (const delta of message.text) {
+              process.stdout.write(delta);
+            }
+          }
+        })();
+      }
+    })(),
+  ]);
+
+  console.log("Done");
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exitCode = 1;
-});
+main().catch(console.error);
