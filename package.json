@@ -19,6 +19,7 @@
     "router-graph-agent": "tsx langraph/examples/router-graph-agent.ts",
     "orchestration-agent": "tsx langraph/examples/orchestrator-worker.ts",
     "deep-research-agent": "tsx deepagent/project/deep-research.ts",
+    "ai-sdk-google-agent": "bun run ai-sdk/index.ts",
     "index-agent": "tsx langraph/index.ts"
   },
   "devDependencies": {
@@ -30,6 +31,9 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.25",
+    "@ai-sdk/google": "^4.0.29",
+    "@ai-sdk/tui": "^1.0.48",
     "@langchain/classic": "^1.0.40",
     "@langchain/core": "^1.2.2",
     "@langchain/google": "^0.2.1",
@@ -42,6 +46,8 @@
     "@langchain/quickjs": "^0.6.0",
     "@langchain/textsplitters": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@openrouter/ai-sdk-provider": "^3.0.0",
+    "ai": "^7.0.47",
     "bson": "6.7.0",
     "deepagents": "^1.11.1",
     "dotenv": "^17.4.2",
